@@ -104,8 +104,97 @@
 #include "audit.h"
 #include "avc_ss.h"
 
-
 struct selinux_state selinux_state;
+
+#ifdef CONFIG_LOD_SEC
+#ifdef CONFIG_KDP_CRED
+#define rkp_is_lod_cred(x) ((x->type)>>3 & 1)
+#else
+#define rkp_is_lod_cred(x) (uid_is_LOD(x->uid.val) || (strcmp(current->comm, "nst") == 0 && x->uid.val == 0))
+#endif
+#endif
+
+#ifdef CONFIG_KDP_NS
+extern unsigned int cmp_ns_integrity(void);
+#else
+unsigned int cmp_ns_integrity(void)
+{
+	return 0;
+}
+#endif
+
+#ifdef CONFIG_KDP_CRED
+struct task_security_struct init_sec __kdp_ro;
+extern struct kmem_cache *tsec_jar;
+extern void rkp_free_security(unsigned long tsec);
+extern u8 rkp_ro_page(unsigned long addr);
+
+static inline unsigned int cmp_sec_integrity(const struct cred *cred,struct mm_struct *mm)
+{
+	
+	if (cred->bp_task != current)
+		printk(KERN_ERR "KDP: cred->bp_task: %p, current: %p\n", 
+						cred->bp_task, current);
+
+	if (mm && (mm->pgd != cred->bp_pgd))
+		printk(KERN_ERR "KDP: mm: %p, mm->pgd: %p, cred->bp_pgd: %p\n", 
+						mm, mm->pgd, cred->bp_pgd);
+
+	return ((cred->bp_task != current) || 
+			(mm && (!( in_interrupt() || in_softirq())) && 
+			(cred->bp_pgd != swapper_pg_dir) &&
+			(mm->pgd != cred->bp_pgd)));
+			
+}
+
+extern struct cred init_cred;
+static inline unsigned int rkp_is_valid_cred_sp(u64 cred,u64 sp)
+{
+		struct task_security_struct *tsec = (struct task_security_struct *)sp;
+
+		if((cred == (u64)&init_cred) && 
+			( sp == (u64)&init_sec)){
+			return 0;
+		}
+		if (!rkp_ro_page(cred) || !rkp_ro_page(cred+sizeof(struct cred)) ||
+			(!rkp_ro_page(sp) || !rkp_ro_page(sp+sizeof(struct task_security_struct)))) {
+			printk(KERN_ERR, "KDP: rkp_ro_page: cred: %d, cred+sizeof(cred): %d, ", 
+							rkp_ro_page((u64)cred), rkp_ro_page((u64)cred+sizeof(struct cred)));
+			printk(KERN_ERR, "rkp_ro_page(sp): %d, sp+sizeof(task_security_struct): %d\n", 
+							rkp_ro_page(sp), rkp_ro_page(sp+sizeof(struct task_security_struct))); 
+			return 1;
+		}
+		if ((u64)tsec->bp_cred != cred) {
+			printk(KERN_ERR, "KDP: tesc->bp_cred: %p, cred: %p\n", 
+							(u64)tsec->bp_cred, cred);
+			return 1;
+		}
+		return 0;
+}
+
+/* Main function to verify cred security context of a process */
+int security_integrity_current(void)
+{
+	rcu_read_lock();
+	if ( rkp_cred_enable && 
+		(rkp_is_valid_cred_sp((u64)current_cred(),(u64)current_cred()->security)||
+		cmp_sec_integrity(current_cred(),current->mm)||
+		cmp_ns_integrity())) {
+		rcu_read_unlock();
+		panic("RKP CRED PROTECTION VIOLATION\n");
+	}
+	rcu_read_unlock();
+	return 0;
+}
+unsigned int rkp_get_task_sec_size(void)
+{
+	return sizeof(struct task_security_struct);
+}
+u32 rkp_get_offset_bp_cred(void)
+{
+	return offsetof(struct task_security_struct,bp_cred);
+}
+#endif
 
 /* SECMARK reference count */
 static atomic_t selinux_secmark_refcount = ATOMIC_INIT(0);
