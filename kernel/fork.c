@@ -95,6 +95,7 @@
 #include <linux/thread_info.h>
 #include <linux/cpufreq_times.h>
 #include <linux/scs.h>
+#include <linux/simple_lmk.h>
 
 #include <asm/pgtable.h>
 #include <asm/pgalloc.h>
@@ -1074,9 +1075,10 @@ static inline void __mmput(struct mm_struct *mm)
 		list_del(&mm->mmlist);
 		spin_unlock(&mmlist_lock);
 	}
-	if (mm->binfmt)
-		module_put(mm->binfmt->module);
+	if (mm->binfmt)	
+        module_put(mm->binfmt->module);
 	lru_gen_del_mm(mm);
+	simple_lmk_mm_freed(mm);
 	mmdrop(mm);
 }
 
