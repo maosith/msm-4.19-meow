@@ -143,6 +143,7 @@ out/
 *.out
 zImage
 
+
 # Samsung
 scripts/cfp/common.pyc
 scripts/crypto/__pycache__/
@@ -150,6 +151,12 @@ scripts/fmp/__pycache__/
 security/samsung/defex_lsm/defex_packed_rules.inc
 security/samsung/defex_lsm/pack_rules
 
+
 # AnyKernel
 dtb
 
+
+#
+#Ignoring Android.bp link file
+#
+Android.bp
