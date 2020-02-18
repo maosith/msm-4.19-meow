@@ -153,3 +153,7 @@ security/samsung/defex_lsm/pack_rules
 # AnyKernel
 dtb
 
+#
+#Ignoring Android.bp link file
+#
+Android.bp
