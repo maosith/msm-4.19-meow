@@ -28,6 +28,8 @@ ifeq ($(CONFIG_LD_IS_LLD), y)
 ccflags-y += -fuse-ld=lld
 endif
 
+ccflags-y += $(call cc-option, -fno-whole-program)
+
 
 obj-y += vdso.o
 extra-y += vdso.lds
