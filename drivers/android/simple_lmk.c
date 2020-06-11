@@ -50,7 +50,7 @@ static struct victim_info victims[MAX_VICTIMS];
 static DECLARE_WAIT_QUEUE_HEAD(oom_waitq);
 static DECLARE_COMPLETION(reclaim_done);
 static DEFINE_RWLOCK(mm_free_lock);
-static int victims_to_kill;
+static int nr_victims;
 static atomic_t needs_reclaim = ATOMIC_INIT(0);
 static atomic_t nr_killed = ATOMIC_INIT(0);
 
@@ -95,6 +95,7 @@ static unsigned long find_victims(int *vindex, unsigned short target_adj_min,
 	for_each_process(tsk) {
 		struct signal_struct *sig;
 		struct task_struct *vtsk;
+		short adj;
 
 		/*
 		 * Search for suitable tasks with the targeted importance (adj).
@@ -106,7 +107,8 @@ static unsigned long find_victims(int *vindex, unsigned short target_adj_min,
 		 * trying to lock a task that we locked earlier.
 		 */
 		sig = tsk->signal;
-		if (READ_ONCE(sig->oom_score_adj) != target_adj ||
+		adj = READ_ONCE(sig->oom_score_adj);
+		if (adj < target_adj_min || adj > target_adj_max - 1 ||
 		    sig->flags & (SIGNAL_GROUP_EXIT | SIGNAL_GROUP_COREDUMP) ||
 		    (thread_group_empty(tsk) && tsk->flags & PF_EXITING) ||
 		    vtsk_is_duplicate(*vindex, tsk))
@@ -156,11 +158,10 @@ static int process_victims(int vlen, unsigned long pages_needed)
 		/* The victim's mm lock is taken in find_victims; release it */
 		if (pages_found >= pages_needed) {
 			task_unlock(vtsk);
-			continue;
+		} else {
+			pages_found += victim->size;
+			nr_to_kill++;
 		}
-
-		pages_found += victim->size;
-		nr_to_kill++;
 	}
 
 	return nr_to_kill;
@@ -168,26 +169,26 @@ static int process_victims(int vlen, unsigned long pages_needed)
 
 static void scan_and_kill(unsigned long pages_needed)
 {
-	int i, nr_to_kill = 0, nr_victims = 0, ret;
+	int i, nr_to_kill = 0, nr_found = 0;
 	unsigned long pages_found = 0;
 
 	/* Hold an RCU read lock while traversing the global process list */
 	rcu_read_lock();
 	for (i = 1; i < ARRAY_SIZE(adjs); i++) {
-		pages_found += find_victims(&nr_victims, adjs[i], adjs[i - 1]);
-		if (pages_found >= pages_needed || nr_victims == MAX_VICTIMS)
+		pages_found += find_victims(&nr_found, adjs[i], adjs[i - 1]);
+		if (pages_found >= pages_needed || nr_found == MAX_VICTIMS)
 			break;
 	}
 	rcu_read_unlock();
 
 	/* Pretty unlikely but it can happen */
-	if (unlikely(!nr_victims)) {
+	if (unlikely(!nr_found)) {
 		pr_err("No processes available to kill!\n");
 		return;
 	}
 
 	/* First round of victim processing to weed out unneeded victims */
-	nr_to_kill = process_victims(nr_victims, pages_needed);
+	nr_to_kill = process_victims(nr_found, pages_needed);
 
 	/*
 	 * Try to kill as few of the chosen victims as possible by sorting the
@@ -201,7 +202,7 @@ static void scan_and_kill(unsigned long pages_needed)
 
 	/* Store the final number of victims for simple_lmk_mm_freed() */
 	write_lock(&mm_free_lock);
-	victims_to_kill = nr_to_kill;
+	nr_victims = nr_to_kill;
 	write_unlock(&mm_free_lock);
 
 	/* Kill the victims */
@@ -234,15 +235,10 @@ static void scan_and_kill(unsigned long pages_needed)
 	}
 
 	/* Wait until all the victims die or until the timeout is reached */
-	ret = wait_for_completion_timeout(&reclaim_done, RECLAIM_EXPIRES);
+	wait_for_completion_timeout(&reclaim_done, RECLAIM_EXPIRES);
 	write_lock(&mm_free_lock);
-	if (!ret) {
-		/* Extra clean-up is needed when the timeout is hit */
-		reinit_completion(&reclaim_done);
-		for (i = 0; i < nr_to_kill; i++)
-			victims[i].mm = NULL;
-	}
-	victims_to_kill = 0;
+	reinit_completion(&reclaim_done);
+	nr_victims = 0;
 	nr_killed = (atomic_t)ATOMIC_INIT(0);
 	write_unlock(&mm_free_lock);
 }
@@ -256,7 +252,7 @@ static int simple_lmk_reclaim_thread(void *data)
 	sched_setscheduler_nocheck(current, SCHED_FIFO, &sched_max_rt_prio);
 
 	while (1) {
-		wait_event(oom_waitq, atomic_read_acquire(&needs_reclaim));
+		wait_event(oom_waitq, atomic_read(&needs_reclaim));
 		scan_and_kill(MIN_FREE_PAGES);
 		atomic_set_release(&needs_reclaim, 0);
 	}
@@ -269,9 +265,10 @@ void simple_lmk_mm_freed(struct mm_struct *mm)
 	int i;
 
 	read_lock(&mm_free_lock);
-	for (i = 0; i < victims_to_kill; i++) {
-		if (cmpxchg(&victims[i].mm, mm, NULL) == mm) {
-			if (atomic_inc_return(&nr_killed) == victims_to_kill)
+	for (i = 0; i < nr_victims; i++) {
+		if (victims[i].mm == mm) {
+			victims[i].mm = NULL;
+			if (atomic_inc_return_relaxed(&nr_killed) == nr_victims)
 				complete(&reclaim_done);
 			break;
 		}
