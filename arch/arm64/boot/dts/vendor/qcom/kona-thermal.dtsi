@@ -682,7 +682,7 @@
 		wake-capable-sensor;
 		trips {
 			gpu_trip0: gpu-trip0 {
-				temperature = <95000>;
+				temperature = <100000>;
 				hysteresis = <0>;
 				type = "passive";
 			};
@@ -733,7 +733,7 @@
 		wake-capable-sensor;
 		trips {
 			pop_trip: pop-trip {
-				temperature = <95000>;
+				temperature = <100000>;
 				hysteresis = <0>;
 				type = "passive";
 			};
@@ -764,7 +764,7 @@
 		wake-capable-sensor;
 		trips {
 			cpu00_config: cpu00-config {
-				temperature = <110000>;
+				temperature = <115000>;
 				hysteresis = <10000>;
 				type = "passive";
 			};
@@ -786,7 +786,7 @@
 		wake-capable-sensor;
 		trips {
 			cpu01_config: cpu01-config {
-				temperature = <110000>;
+				temperature = <115000>;
 				hysteresis = <10000>;
 				type = "passive";
 			};
@@ -808,7 +808,7 @@
 		wake-capable-sensor;
 		trips {
 			cpu02_config: cpu02-config {
-				temperature = <110000>;
+				temperature = <115000>;
 				hysteresis = <10000>;
 				type = "passive";
 			};
@@ -830,7 +830,7 @@
 		wake-capable-sensor;
 		trips {
 			cpu03_config: cpu03-config {
-				temperature = <110000>;
+				temperature = <115000>;
 				hysteresis = <10000>;
 				type = "passive";
 			};
@@ -858,7 +858,7 @@
 			};
 
 			cpu10_config: cpu10-config {
-				temperature = <110000>;
+				temperature = <115000>;
 				hysteresis = <10000>;
 				type = "passive";
 			};
@@ -891,7 +891,7 @@
 			};
 
 			cpu11_config: cpu11-config {
-				temperature = <110000>;
+				temperature = <115000>;
 				hysteresis = <10000>;
 				type = "passive";
 			};
@@ -924,7 +924,7 @@
 			};
 
 			cpu12_config: cpu12-config {
-				temperature = <110000>;
+				temperature = <115000>;
 				hysteresis = <10000>;
 				type = "passive";
 			};
@@ -957,7 +957,7 @@
 			};
 
 			cpu13_config: cpu13-config {
-				temperature = <110000>;
+				temperature = <115000>;
 				hysteresis = <10000>;
 				type = "passive";
 			};
@@ -990,7 +990,7 @@
 			};
 
 			cpu14_config: cpu14-config {
-				temperature = <110000>;
+				temperature = <115000>;
 				hysteresis = <10000>;
 				type = "passive";
 			};
@@ -1023,7 +1023,7 @@
 			};
 
 			cpu15_config: cpu15-config {
-				temperature = <110000>;
+				temperature = <115000>;
 				hysteresis = <10000>;
 				type = "passive";
 			};
@@ -1056,7 +1056,7 @@
 			};
 
 			cpu16_config: cpu16-config {
-				temperature = <110000>;
+				temperature = <115000>;
 				hysteresis = <10000>;
 				type = "passive";
 			};
@@ -1089,7 +1089,7 @@
 			};
 
 			cpu17_config: cpu17-config {
-				temperature = <110000>;
+				temperature = <115000>;
 				hysteresis = <10000>;
 				type = "passive";
 			};
