@@ -125,10 +125,6 @@ ifeq "$(BUILD_TYPE)" "DEBUG"
   ccflags-y += -DDEBUG
 endif
 
-ifeq "$(BUILD_TYPE)" "RELEASE"
-endif
-
-
 KERNEL_DRIVER_OBJS = \
 			src/vl53l5_k_ioctl_controls.o \
 			src/vl53l5_k_gpio_utils.o \
@@ -175,7 +171,6 @@ endif
 
 ifeq "$(LOG_ENABLE)" "TRUE"
   ccflags-y += -DVL53L5_KERNEL_LOG
-
 endif
 
 ifeq "$(TCDM_DUMP_ENABLE)" "TRUE"
