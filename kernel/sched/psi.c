@@ -172,14 +172,6 @@ __setup("psi=", setup_psi);
 #define WINDOW_MAX_US 10000000	/* Max window size is 10s */
 #define UPDATES_PER_WINDOW 10	/* 10 updates per window */
 
-#define MONITOR_WINDOW_MIN_NS 1000000000 /* 1s */
-#define MONITOR_THRESHOLD_MIN_NS 100000000 /* 100ms */
-
-#define PERFLOG_PSI_THRESHOLD	250
-#define AVG10			0
-#define AVG60			1
-#define AVG300			2
-
 u64 psi_full_max;
 
 /* Sampling frequency in nanoseconds */
@@ -416,21 +408,9 @@ static u64 update_averages(struct psi_group *group, u64 now)
 			sample = period;
 		group->avg_total[s] += sample;
 		calc_avgs(group->avg[s], missed_periods, sample, period);
-		if (s % 2 && (LOAD_INT(group->avg[s][AVG10]) * 100 + LOAD_FRAC(group->avg[s][AVG10])) >= PERFLOG_PSI_THRESHOLD) {
-			u64 total_full = 0, total_some = 0;
-			int some, full;
-			char title[NR_PSI_RESOURCES][4] = {"IO", "MEM", "CPU"};
-			char *strtitle;
 
-			strtitle = title[s / 2];
-			some = s - 1;
-			full = s;
-
-			total_some = div_u64(group->total[PSI_AVGS][some], NSEC_PER_USEC);
-			total_full = div_u64(group->total[PSI_AVGS][full], NSEC_PER_USEC);
-		}
-	}
-
+        }
+        
 	return avg_next_update;
 }
 
@@ -590,14 +570,6 @@ static u64 update_triggers(struct psi_group *group, u64 now)
 		/* Calculate growth since last update */
 		growth = window_update(&t->win, now, total[t->state]);
 
-		if ((t->win.size >= MONITOR_WINDOW_MIN_NS)){
-			if (t->state==3) { //FULL
-				if(growth < 5000000000 && growth > psi_full_max) {
-					psi_full_max = growth;
-				}
-			}
-		}
-
 		if (growth < t->threshold)
 			continue;
 
@@ -606,11 +578,6 @@ static u64 update_triggers(struct psi_group *group, u64 now)
 			continue;
 
 		trace_psi_event(t->state, t->threshold);
-
-		if ((t->win.size >= MONITOR_WINDOW_MIN_NS) && 
-		    (t->threshold >= MONITOR_THRESHOLD_MIN_NS))
-			printk_deferred("psi: %s %llu %llu %d %llu %llu\n", __func__, now,
-			       t->last_event_time, t->state, t->threshold, growth);
 
 		/* Generate an event */
 		if (cmpxchg(&t->event, 0, 1) == 0) {
