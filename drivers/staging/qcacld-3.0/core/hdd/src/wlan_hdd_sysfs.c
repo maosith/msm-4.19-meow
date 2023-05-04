@@ -723,6 +723,16 @@ void hdd_sysfs_destroy_driver_root_obj(void)
 		driver_kobject = NULL;
 	}
 }
+#else
+void hdd_sysfs_create_driver_root_obj(void)
+{
+	return;
+}
+
+void hdd_sysfs_destroy_driver_root_obj(void)
+{
+	return;
+}
 #endif
 
 #ifdef WLAN_FEATURE_BEACON_RECEPTION_STATS
