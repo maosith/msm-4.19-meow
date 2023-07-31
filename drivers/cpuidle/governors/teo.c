@@ -325,15 +325,17 @@ static s64 teo_middle_of_bin(int idx, struct cpuidle_driver *drv)
  * @dev: Target CPU.
  * @state_idx: Index of the capping idle state.
  * @duration_us: Idle duration value to match.
+ * @no_poll: Don't consider polling states.
  */
 static int teo_find_shallower_state(struct cpuidle_driver *drv,
 				    struct cpuidle_device *dev, int state_idx,
-				    s64 duration_us)
+				    s64 duration_us, bool no_poll)
 {
 	int i;
 
 	for (i = state_idx - 1; i >= 0; i--) {
-		if (dev->states_usage[i].disable)
+		if (dev->states_usage[i].disable ||
+				(no_poll && drv->states[i].flags & CPUIDLE_FLAG_POLLING))
 			continue;
 
 		state_idx = i;
@@ -380,12 +382,13 @@ static int teo_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
 	/* Check if there is any choice in the first place. */
 	if (drv->state_count < 2) {
 		idx = 0;
-		goto end;
+		goto out_tick;
 	}
+
 	if (!dev->states_usage[0].disable) {
 		idx = 0;
 		if (drv->states[1].target_residency > duration_us)
-			goto end;
+			goto out_tick;
 	}
 
 	cpu_data->utilized = teo_cpu_is_utilized(dev->cpu, cpu_data);
@@ -408,9 +411,10 @@ static int teo_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
 		if ((!idx && !(drv->states[0].flags & CPUIDLE_FLAG_POLLING) &&
 		    teo_time_ok(duration_us)) || dev->states_usage[1].disable)
 			idx = 0;
-		else /* Assume that state 1 is not a polling one and use it. */
-			idx = 1;
-
+			goto out_tick;
+		}
+		/* Assume that state 1 is not a polling one and use it. */
+		idx = 1;
 		goto end;
 	}
 
@@ -457,8 +461,15 @@ static int teo_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
 	/* Avoid unnecessary overhead. */
 	if (idx < 0) {
 		idx = 0; /* No states enabled, must use 0. */
-		goto end;
-	} else if (idx == idx0) {
+		goto out_tick;
+	}
+
+	if (idx == idx0) {
+		/*
+		 * This is the first enabled idle state, so use it, but do not
+		 * allow the tick to be stopped it is shallow enough.
+		 */
+		duration_us = drv->states[idx].target_residency;
 		goto end;
 	}
 
@@ -564,25 +575,25 @@ static int teo_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
 
 end:
 	/*
-	 * Don't stop the tick if the selected state is a polling one or if the
-	 * expected idle duration is shorter than the tick period length.
+	 * Allow the tick to be stopped unless the selected state is a polling
+	 * one or the expected idle duration is shorter than the tick period
+	 * length.
 	 */
-	if (((drv->states[idx].flags & CPUIDLE_FLAG_POLLING) ||
-	    duration_us < TICK_USEC) && !tick_nohz_tick_stopped()) {
-		unsigned int delta_tick_us = ktime_to_us(delta_tick);
-		*stop_tick = false;
+	if ((!(drv->states[idx].flags & CPUIDLE_FLAG_POLLING) &&
+	    duration_us >= TICK_USEC) || tick_nohz_tick_stopped())
+		return idx;
 
-		/*
-		 * The tick is not going to be stopped, so if the target
-		 * residency of the state to be returned is not within the time
-		 * till the closest timer including the tick, try to correct
-		 * that.
-		 */
-		if (idx > idx0 &&
-		    drv->states[idx].target_residency > delta_tick_us)
-			idx = teo_find_shallower_state(drv, dev, idx, delta_tick_us);
-	}
+	/*
+	 * The tick is not going to be stopped, so if the target residency of
+	 * the state to be returned is not within the time till the closest
+	 * timer including the tick, try to correct that.
+	 */
+	if (idx > idx0 &&
+	    drv->states[idx].target_residency > ktime_to_us(delta_tick))
+		idx = teo_find_shallower_state(drv, dev, idx, ktime_to_us(delta_tick), false);
 
+out_tick:
+	*stop_tick = false;
 	return idx;
 }
 
