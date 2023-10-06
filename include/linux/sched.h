@@ -551,13 +551,6 @@ struct sched_entity {
 	struct cfs_rq			*my_q;
 #endif
 
-#ifdef CONFIG_FAST_TRACK
-	int ftt_mark;
-	int ftt_enqueue_time;
-	atomic64_t ftt_dyn_mark;
-	u64 ftt_vrt_delta;
-#endif
-
 #ifdef CONFIG_SMP
 	/*
 	 * Per entity load average tracking.
@@ -802,10 +795,6 @@ union rcu_special {
 	} b; /* Bits. */
 	u32 s; /* Set of bits. */
 };
-
-#ifdef CONFIG_FIVE
-struct task_integrity;
-#endif
 
 enum perf_event_task_context {
 	perf_invalid_context = -1,
@@ -1469,9 +1458,7 @@ struct task_struct {
 #endif
 #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
 	unsigned long			task_state_change;
-#endif
-#ifdef CONFIG_FIVE
-	struct task_integrity		*integrity;
+
 #endif
 	int				pagefault_disabled;
 #ifdef CONFIG_MMU
@@ -1491,10 +1478,7 @@ struct task_struct {
 	/* Used by LSM modules for access restriction: */
 	void				*security;
 #endif
-#ifdef CONFIG_PERF_MGR
-	int drawing_flag;
-	int drawing_mig_boost;
-#endif
+
 	/*
 	 * New fields for task_struct should be added above here, so that
 	 * they are included in the randomized portion of task_struct.
@@ -1735,7 +1719,7 @@ extern struct pid *cad_pid;
 #define tsk_used_math(p)			((p)->flags & PF_USED_MATH)
 #define used_math()				tsk_used_math(current)
 
-static __always_inline bool is_percpu_thread(void)
+static inline bool is_percpu_thread(void)
 {
 #ifdef CONFIG_SMP
 	return (current->flags & PF_NO_SETAFFINITY) &&
