@@ -130,4 +130,6 @@ source "drivers/staging/samsung/sec_notifier/Kconfig"
 
 source "drivers/staging/sti/Kconfig"
 
+source "drivers/staging/qcacld-3.0/Kconfig"
+
 endif # STAGING
