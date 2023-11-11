@@ -62,7 +62,7 @@ struct page *selinux_kernel_status_page(struct selinux_state *state)
 #elif defined(CONFIG_SECURITY_SELINUX_ALWAYS_PERMISSIVE)
 			status->enforcing = 0;
 #else
-			status->enforcing = enforcing_enabled(state);
+			status->enforcing = 0;
 #endif
 // ] SEC_SELINUX_PORTING_COMMON
 			

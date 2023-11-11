@@ -225,8 +225,8 @@ static int __init enforcing_setup(char *str)
 		selinux_enforcing_boot = 0;
 		selinux_enforcing = 0;
 #else
-		selinux_enforcing_boot = enforcing ? 1 : 0;
-		selinux_enforcing = enforcing ? 1 : 0;
+		selinux_enforcing_boot = 0;
+		selinux_enforcing =  0;
 #endif
 // ] SEC_SELINUX_PORTING_COMMON
 	}
@@ -7506,6 +7506,7 @@ static __init int selinux_init(void)
 #elif defined(CONFIG_SECURITY_SELINUX_ALWAYS_PERMISSIVE)
 		selinux_enforcing_boot = 0;
 #endif
+		selinux_enforcing_boot = 0;
 // ] SEC_SELINUX_PORTING_COMMON
 
 	if (selinux_enforcing_boot)
