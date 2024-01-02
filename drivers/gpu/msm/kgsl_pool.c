@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved. 
  */
 
 #include <asm/cacheflush.h>
@@ -13,8 +14,15 @@
 #include "kgsl_pool.h"
 #include "kgsl_sharedmem.h"
 
+#ifdef CONFIG_HUGEPAGE_POOL
+#include <linux/hugepage_pool.h>
+#define KGSL_MAX_POOLS 5
+#define KGSL_MAX_POOL_ORDER 9
+#else
 #define KGSL_MAX_POOLS 4
 #define KGSL_MAX_POOL_ORDER 8
+#endif
+
 #define KGSL_MAX_RESERVED_PAGES 4096
 
 /**
@@ -49,6 +57,12 @@ _kgsl_get_pool_from_order(unsigned int order)
 {
 	int i;
 
+#ifdef CONFIG_HUGEPAGE_POOL
+	if (order == HUGEPAGE_ORDER &&
+	    !is_hugepage_allowed(current, order, false, HPAGE_GPU))
+		return NULL;
+#endif
+
 	for (i = 0; i < kgsl_num_pools; i++) {
 		if (kgsl_pools[i].pool_order == order)
 			return &kgsl_pools[i];
@@ -61,6 +75,15 @@ _kgsl_get_pool_from_order(unsigned int order)
 static void
 _kgsl_pool_add_page(struct kgsl_page_pool *pool, struct page *p)
 {
+	/*
+	 * Sanity check to make sure we don't re-pool a page that
+	 * somebody else has a reference to.
+	 */
+	if (WARN_ON_ONCE(unlikely(page_count(p) > 1))) {
+		__free_pages(p, pool->pool_order);
+		return;
+	}
+	
 	kgsl_zero_page(p, pool->pool_order);
 
 	spin_lock(&pool->list_lock);
@@ -325,7 +348,15 @@ int kgsl_pool_alloc_page(int *page_size, struct page **pages,
 			goto eagain;
 		}
 
+#ifdef CONFIG_HUGEPAGE_POOL
+		if (order == HUGEPAGE_ORDER)
+			page = alloc_zeroed_hugepage(gfp_mask, order, false,
+						     HPAGE_GPU);
+		else
+			page = alloc_pages(gfp_mask, order);
+#else
 		page = alloc_pages(gfp_mask, order);
+#endif
 
 		if (!page) {
 			if (pool_idx > 0) {

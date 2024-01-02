@@ -34,6 +34,9 @@
 #include "msm-pcm-q6-v2.h"
 #include "msm-pcm-routing-v2.h"
 
+#ifdef CONFIG_SEC_PCIE_L1SS_CTRL
+#include <linux/msm_pcie.h>
+#endif /* CONFIG_SEC_PCIE_L1SS_CTRL */
 
 #define DRV_NAME "msm-pcm-q6-noirq"
 
@@ -253,6 +256,12 @@ static int msm_pcm_open(struct snd_pcm_substream *substream)
 	prtd->dsp_cnt = 0;
 	prtd->set_channel_map = false;
 	runtime->private_data = prtd;
+
+#ifdef CONFIG_SEC_PCIE_L1SS_CTRL
+	pr_info("%s: sec_pcie_l1ss_disable()\n", __func__);
+	sec_pcie_l1ss_disable(L1SS_AUDIO);
+#endif /* CONFIG_SEC_PCIE_L1SS_CTRL */
+
 	return 0;
 
 fail_cmd:
@@ -611,7 +620,11 @@ static int msm_pcm_prepare(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct msm_audio *prtd = runtime->private_data;
 	struct asm_softvolume_params softvol = {
+#ifdef CONFIG_SND_SOC_SAMSUNG_AUDIO
+		.period = SOFT_VOLUME_MMAP_PERIOD,
+#else
 		.period = SOFT_VOLUME_PERIOD,
+#endif
 		.step = SOFT_VOLUME_STEP,
 		.rampingcurve = SOFT_VOLUME_CURVE_LINEAR,
 	};
@@ -695,6 +708,11 @@ static int msm_pcm_close(struct snd_pcm_substream *substream)
 	kfree(prtd);
 	runtime->private_data = NULL;
 	mutex_unlock(&pdata->lock);
+
+#ifdef CONFIG_SEC_PCIE_L1SS_CTRL
+	pr_info("%s: sec_pcie_l1ss_enable()\n", __func__);
+	sec_pcie_l1ss_enable(L1SS_AUDIO);
+#endif /* CONFIG_SEC_PCIE_L1SS_CTRL */
 
 	return 0;
 }

@@ -17,6 +17,10 @@
 #include "sde_hw_uidle.h"
 #include "sde_connector.h"
 
+#if defined(CONFIG_DISPLAY_SAMSUNG)
+#include "ss_dsi_panel_common.h"
+#endif
+
 /*************************************************************
  * MACRO DEFINITION
  *************************************************************/
@@ -225,6 +229,7 @@ enum {
 	PERF_AXI_BUS_WIDTH,
 	PERF_CDP_SETTING,
 	PERF_CPU_MASK,
+	CPU_MASK_PERF,
 	PERF_CPU_DMA_LATENCY,
 	PERF_CPU_IRQ_LATENCY,
 	PERF_PROP_MAX,
@@ -548,6 +553,8 @@ static struct sde_prop_type sde_perf_prop[] = {
 	{PERF_CDP_SETTING, "qcom,sde-cdp-setting", false,
 			PROP_TYPE_U32_ARRAY},
 	{PERF_CPU_MASK, "qcom,sde-qos-cpu-mask", false, PROP_TYPE_U32},
+	{CPU_MASK_PERF, "qcom,sde-qos-cpu-mask-performance", false,
+			PROP_TYPE_U32},
 	{PERF_CPU_DMA_LATENCY, "qcom,sde-qos-cpu-dma-latency", false,
 			PROP_TYPE_U32},
 	{PERF_CPU_IRQ_LATENCY, "qcom,sde-qos-cpu-irq-latency", false,
@@ -2487,6 +2494,8 @@ static int sde_dspp_parse_dt(struct device_node *np,
 			sblk->ltm.version = PROP_VALUE_ACCESS(ltm_prop_value,
 				LTM_VERSION, 0);
 			set_bit(SDE_DSPP_LTM, &dspp->features);
+			SDE_INFO("ltm base(0x%8x), version(0x%8x)\n",
+				sblk->ltm.base, sblk->ltm.version);
 		}
 
 	}
@@ -3839,6 +3848,10 @@ static int _sde_perf_parse_dt_cfg(struct device_node *np,
 			prop_exists[PERF_CPU_MASK] ?
 			PROP_VALUE_ACCESS(prop_value, PERF_CPU_MASK, 0) :
 			DEFAULT_CPU_MASK;
+	cfg->perf.cpu_mask_perf =
+			prop_exists[CPU_MASK_PERF] ?
+			PROP_VALUE_ACCESS(prop_value, CPU_MASK_PERF, 0) :
+			DEFAULT_CPU_MASK;
 	cfg->perf.cpu_dma_latency =
 			prop_exists[PERF_CPU_DMA_LATENCY] ?
 			PROP_VALUE_ACCESS(prop_value, PERF_CPU_DMA_LATENCY, 0) :
@@ -4291,6 +4304,7 @@ static int _sde_hardware_pre_caps(struct sde_mdss_cfg *sde_cfg, uint32_t hw_rev)
 		sde_cfg->has_vig_p010 = true;
 		sde_cfg->true_inline_rot_rev = SDE_INLINE_ROT_VERSION_1_0_0;
 		sde_cfg->uidle_cfg.uidle_rev = SDE_UIDLE_VERSION_1_0_0;
+		sde_cfg->uidle_cfg.uidle_rev = 0; /* case 05834850: disable uidle */
 	} else if (IS_SAIPAN_TARGET(hw_rev)) {
 		sde_cfg->has_cwb_support = true;
 		sde_cfg->has_wb_ubwc = true;
@@ -4530,6 +4544,33 @@ struct sde_mdss_cfg *sde_hw_catalog_init(struct drm_device *dev, u32 hw_rev)
 	rc = sde_top_parse_dt(np, sde_cfg);
 	if (rc)
 		goto end;
+
+#if defined(CONFIG_DISPLAY_SAMSUNG)
+	{
+		/* sde_hw_catalog_init() be called once for dual dsi,
+		 * and two vdds share same sde_kms pointer.
+		 * get sde_kms from primary vdd, then call ss_callback
+		 * for primary and secondary vdd, respectively.
+		 */
+		struct samsung_display_driver_data *vdd = ss_get_vdd(PRIMARY_DISPLAY_NDX);
+		struct sde_kms *sde_kms = NULL;
+
+		if (IS_ERR_OR_NULL(vdd))
+			goto done;
+
+		sde_kms = GET_SDE_KMS(vdd);
+
+		if (IS_ERR_OR_NULL(sde_kms) ||
+				IS_ERR_OR_NULL(sde_kms->base.funcs->ss_callback))
+			goto done;
+
+		sde_kms->base.funcs->ss_callback(PRIMARY_DISPLAY_NDX,
+				SS_EVENT_SDE_HW_CATALOG_INIT, (void *)sde_cfg);
+		sde_kms->base.funcs->ss_callback(SECONDARY_DISPLAY_NDX,
+				SS_EVENT_SDE_HW_CATALOG_INIT, (void *)sde_cfg);
+	}
+done:
+#endif
 
 	rc = sde_perf_parse_dt(np, sde_cfg);
 	if (rc)
