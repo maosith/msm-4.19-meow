@@ -2785,7 +2785,7 @@ static void add_kallsyms(struct module *mod, const struct load_info *info)
 #endif /* CONFIG_KALLSYMS */
 
 #ifdef CONFIG_UH_LKM_BLOCK
-static int lkm_block()
+static int lkm_block(void)
 {
 	return RET_UH_LKM_BLOCK_FORCE;
 }

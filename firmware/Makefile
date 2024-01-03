@@ -91,14 +91,6 @@ ifeq ($(CONFIG_FIVE_TEE_DRIVER),y)
 include $(srctree)/firmware/five/Makefile
 endif
 
-quiet_cmd_ihex  = IHEX    $@
-      cmd_ihex  = $(OBJCOPY) -Iihex -Obinary $< $@
-
-quiet_cmd_ihex2fw  = IHEX2FW $@
-      cmd_ihex2fw  = $(objtree)/$(obj)/ihex2fw $< $@
-quiet_cmd_h16tofw  = H16TOFW $@
-      cmd_h16tofw  = $(objtree)/$(obj)/ihex2fw -w $< $@
-
 quiet_cmd_fwbin = MK_FW   $@
       cmd_fwbin = FWNAME="$(patsubst firmware/%.gen.S,%,$@)";		     \
 		  FWSTR="$(subst /,_,$(subst .,_,$(subst -,_,$(patsubst	     \
@@ -131,41 +123,11 @@ wordsize_deps := $(wildcard include/config/64bit.h include/config/32bit.h \
 		include/config/x86_32.h include/config/x86_64.h \
 		firmware/Makefile)
 
-# We need to use a relative path for the objtree, fwabs points to the source
-# tree where .bin files are not generated
 $(patsubst %,$(obj)/%.gen.S, $(fw-external-y)): %: $(wordsize_deps)
-	$(call cmd,fwbin,$(patsubst %.gen.S,%,$@))
+	$(call cmd,fwbin,$(fwabs)/$(patsubst $(obj)/%.gen.S,%,$@))
 
 # The .o files depend on the binaries directly; the .S files don't.
-$(patsubst %,$(obj)/%.gen.o, $(fw-external-y)): %.gen.o: %
-
-# .ihex is used just as a simple way to hold binary files in a source tree
-# where binaries are frowned upon. They are directly converted with objcopy.
-$(obj)/%: $(obj)/%.ihex
-	$(call cmd,ihex)
-
-# Don't depend on ihex2fw if we're installing and it already exists.
-# Putting it after | in the dependencies doesn't seem sufficient when
-# we're installing after a cross-compile, because ihex2fw has dependencies
-# on stuff like /usr/lib/gcc/ppc64-redhat-linux/4.3.0/include/stddef.h and
-# thus wants to be rebuilt. Which it can't be, if the prebuilt kernel tree
-# is exported read-only for someone to run 'make install'.
-ifeq ($(INSTALL):$(wildcard $(obj)/ihex2fw),install:$(obj)/ihex2fw)
-ihex2fw_dep :=
-else
-ihex2fw_dep := $(obj)/ihex2fw
-endif
-
-# .HEX is also Intel HEX, but where the offset and length in each record
-# is actually meaningful, because the firmware has to be loaded in a certain
-# order rather than as a single binary blob. Thus, we convert them into our
-# more compact binary representation of ihex records (<linux/ihex.h>)
-$(obj)/%.fw: $(obj)/%.HEX $(ihex2fw_dep)
-	$(call cmd,ihex2fw)
-
-# .H16 is our own modified form of Intel HEX, with 16-bit length for records.
-$(obj)/%.fw: $(obj)/%.H16 $(ihex2fw_dep)
-	$(call cmd,h16tofw)
+$(patsubst %,$(obj)/%.gen.o, $(fw-external-y)): $(obj)/%.gen.o: $(fwdir)/%
 
 obj-y				 += $(patsubst %,%.gen.o, $(fw-external-y))
 
@@ -177,5 +139,3 @@ endif
 
 targets := $(patsubst $(obj)/%,%, \
                                 $(shell find $(obj) -name \*.gen.S 2>/dev/null))
-
-hostprogs-y := ihex2fw
