@@ -10,7 +10,7 @@ if [ -z "$KERNEL_NAME" ]; then
 fi
 
 TC_PATH="$HOME/clang-r510928/bin/"
-GCC_PATH="$HOME/gcc-/bin/"
+GCC_PATH="/usr/bin/"
 
 BUILD_ENV="CC=${TC_PATH}clang CROSS_COMPILE=${GCC_PATH}aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 PATH=$LLVM_PATH:$LLD_PATH:$PATH"  
 
