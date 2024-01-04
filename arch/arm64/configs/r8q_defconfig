@@ -449,15 +449,7 @@ CONFIG_SETEND_EMULATION=y
 #
 # Control Flow Protection
 #
-CONFIG_CFP=y
-CONFIG_CFP_JOPP=y
-CONFIG_CFP_JOPP_MAGIC=0x00be7bad
-CONFIG_CFP_ROPP=y
-CONFIG_CFP_ROPP_SYSREGKEY=y
-# CONFIG_CFP_ROPP_RANDKEY is not set
-# CONFIG_CFP_ROPP_FIXKEY is not set
-# CONFIG_CFP_ROPP_ZEROKEY is not set
-# CONFIG_CFP_TEST is not set
+# CONFIG_CFP is not set
 
 #
 # ARMv8.1 architectural features
