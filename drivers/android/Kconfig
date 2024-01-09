@@ -1,11 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
 menu "Android"
-
 config ANDROID
 	bool "Android Drivers"
 	---help---
 	  Enable support for various drivers needed on the Android platform
-
 if ANDROID
 
 config ANDROID_BINDER_IPC
@@ -105,6 +103,8 @@ config ANDROID_SIMPLE_LMK_TIMEOUT_MSEC
 	  waiting and make itself available to kill more processes.
 	  
 	  Say N on production builds.
+	  
+endif 
 
 config ANDROID_KABI_RESERVE
 	bool "Android KABI reserve padding"
