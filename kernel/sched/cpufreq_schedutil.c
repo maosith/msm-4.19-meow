@@ -1047,7 +1047,6 @@ static struct attribute *sugov_attributes[] = {
 	&hispeed_freq.attr,
 	&rtg_boost_freq.attr,
 	&pl.attr,
-#endif
 	NULL
 };
 
