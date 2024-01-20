@@ -23,6 +23,7 @@ module_param(kcal_hue, short, 0644);
 module_param(kcal_sat, short, 0644);
 module_param(kcal_val, short, 0644);
 module_param(kcal_cont, short, 0644);
+module_param_named(kcal_value, kcal_val, short, 0644);
 
 static int sde_write_3d_gamut(struct sde_hw_blk_reg_map *hw,
 		struct drm_msm_3d_gamut *payload, u32 base,
