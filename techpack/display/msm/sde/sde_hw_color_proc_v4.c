@@ -12,9 +12,14 @@ unsigned int kcal_red = 256;
 unsigned int kcal_green = 256;
 unsigned int kcal_blue = 256;
 
-module_param(kcal_red, uint, 0644);
-module_param(kcal_green, uint, 0644);
-module_param(kcal_blue, uint, 0644);
+module_param(kcal_red, short, 0644);
+module_param(kcal_green, short, 0644);
+module_param(kcal_blue, short, 0644);
+module_param(kcal_hue, short, 0644);
+module_param(kcal_sat, short, 0644);
+module_param(kcal_val, short, 0644);
+module_param(kcal_cont, short, 0644);
+module_param_named(kcal_value, kcal_val, short, 0644);
 
 static int sde_write_3d_gamut(struct sde_hw_blk_reg_map *hw,
 		struct drm_msm_3d_gamut *payload, u32 base,
