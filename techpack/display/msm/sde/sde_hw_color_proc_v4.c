@@ -8,9 +8,13 @@
 #include "sde_hw_color_proc_common_v4.h"
 #include "sde_hw_color_proc_v4.h"
 
-unsigned int kcal_red = 256;
-unsigned int kcal_green = 256;
-unsigned int kcal_blue = 256;
+static unsigned short kcal_red = 256;
+static unsigned short kcal_green = 256;
+static unsigned short kcal_blue = 256;
+static unsigned short kcal_hue = 0;
+static unsigned short kcal_sat = 255;
+static unsigned short kcal_val = 255;
+static unsigned short kcal_cont = 255;
 
 module_param(kcal_red, short, 0644);
 module_param(kcal_green, short, 0644);
@@ -220,6 +224,7 @@ void sde_setup_dspp_pccv4(struct sde_hw_dspp *ctx, void *cfg)
 	int i = 0;
 	int kcal_min = 20;
 	u32 base = 0;
+	u32 opcode = 0, local_opcode = 0;
 
 	if (!ctx || !cfg) {
 		DRM_ERROR("invalid param ctx %pK cfg %pK\n", ctx, cfg);
@@ -282,22 +287,47 @@ void sde_setup_dspp_pccv4(struct sde_hw_dspp *ctx, void *cfg)
 		}
 
 		SDE_REG_WRITE(&ctx->hw, base + PCC_C_OFF, coeffs->c);
-// ====
-// RED
+
+		// RED
 		SDE_REG_WRITE(&ctx->hw, base + PCC_R_OFF,
 			i == 0 ? (coeffs->r * kcal_red) / 256 : coeffs->r);
-// GREEN
+		// GREEN
 		SDE_REG_WRITE(&ctx->hw, base + PCC_G_OFF,
 			i == 1 ? (coeffs->g * kcal_green) / 256 : coeffs->g);
-// BLUE
+		// BLUE
 		SDE_REG_WRITE(&ctx->hw, base + PCC_B_OFF,
 			i == 2 ? (coeffs->b * kcal_blue) / 256 : coeffs->b);
-// =====
+
 		SDE_REG_WRITE(&ctx->hw, base + PCC_RG_OFF, coeffs->rg);
 		SDE_REG_WRITE(&ctx->hw, base + PCC_RB_OFF, coeffs->rb);
 		SDE_REG_WRITE(&ctx->hw, base + PCC_GB_OFF, coeffs->gb);
 		SDE_REG_WRITE(&ctx->hw, base + PCC_RGB_OFF, coeffs->rgb);
 	}
+
+	opcode = SDE_REG_READ(&ctx->hw, ctx->cap->sblk->hsic.base);
+
+	// HUE
+	SDE_REG_WRITE(&ctx->hw, ctx->cap->sblk->hsic.base + PA_HUE_OFF,
+		kcal_hue & PA_HUE_MASK);
+	local_opcode |= PA_HUE_EN;
+
+	// SATURATION
+	SDE_REG_WRITE(&ctx->hw, ctx->cap->sblk->hsic.base + PA_SAT_OFF,
+		kcal_sat & PA_SAT_MASK);
+	local_opcode |= PA_SAT_EN;
+
+	// VALUE
+	SDE_REG_WRITE(&ctx->hw, ctx->cap->sblk->hsic.base + PA_VAL_OFF,
+		kcal_val & PA_VAL_MASK);
+	local_opcode |= PA_VAL_EN;
+
+	// CONTRAST
+	SDE_REG_WRITE(&ctx->hw, ctx->cap->sblk->hsic.base + PA_CONT_OFF,
+		kcal_cont & PA_CONT_MASK);
+	local_opcode |= PA_CONT_EN;
+
+	opcode |= (local_opcode | PA_EN);
+	SDE_REG_WRITE(&ctx->hw, ctx->cap->sblk->hsic.base, opcode);
 
 	SDE_REG_WRITE(&ctx->hw, ctx->cap->sblk->pcc.base, PCC_EN);
 }
