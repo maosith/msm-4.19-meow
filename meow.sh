@@ -1,5 +1,9 @@
 #!/bin/bash
 
+make mrproper && make clean
+
+rm -rf out
+
 LLVM_PATH="$HOME/clang-r498229b/bin/"
 
 read -p "Digite um nome para o kernel: " KERNEL_NAME
