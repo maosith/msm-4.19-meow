@@ -4,7 +4,7 @@ make mrproper && make clean
 
 rm -rf out
 
-LLVM_PATH="$HOME/clang-r498229b/bin/"
+LLVM_PATH="$HOME/tc/clang-r498229b/bin/"
 
 read -p "Digite um nome para o kernel: " KERNEL_NAME
 
@@ -13,7 +13,7 @@ if [ -z "$KERNEL_NAME" ]; then
     exit 1
 fi
 
-TC_PATH="$HOME/clang-r498229b/bin/"
+TC_PATH="$HOME/tc/clang-r498229b/bin/"
 
 BUILD_ENV="CC=${TC_PATH}clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 PATH=$LLVM_PATH:$LLD_PATH:$PATH"  
 
