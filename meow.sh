@@ -4,18 +4,18 @@ make mrproper && make clean
 
 rm -rf out
 
-LLVM_PATH="$HOME/tc/clang-r498229b/bin/"
+LLVM_PATH="/home/chanz22/Documentos/tc/Clang-19.0.0git-20240209/bin/"
 
-read -p "Digite um nome para o kernel: " KERNEL_NAME
+read -p "Digite uma versão para o kernel: " KERNEL_NAME
 
 if [ -z "$KERNEL_NAME" ]; then
-    echo "Nome do kernel não pode ser vazio. Saindo."
+    echo "Erro : a Versão do Kernel não pode estar vazia. Saindo..."
     exit 1
 fi
 
-TC_PATH="$HOME/tc/clang-r498229b/bin/"
+TC_PATH="/home/chanz22/Documentos/tc/Clang-19.0.0git-20240209/bin/"
 
-BUILD_ENV="CC=${TC_PATH}clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 PATH=$LLVM_PATH:$LLD_PATH:$PATH"  
+BUILD_ENV="CC=${TC_PATH}clang CROSS_COMPILE=/home/chanz22/Documentos/tc/Clang-19.0.0git-20240209/bin/aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 PATH=$LLVM_PATH:$LLD_PATH:$PATH"  
 
 KERNEL_MAKE_ENV="DTC_EXT=$(pwd)/tools/dtc CONFIG_BUILD_ARM64_DT_OVERLAY=y"
 
@@ -39,5 +39,5 @@ echo "Tempo de compilação: $(($DIFF / 60)) minutos(s) and $(($DIFF % 60)) segu
 cp $IMAGE AnyKernel3/Image.gz
 cd AnyKernel3
 rm *.zip
-zip -r9 ${KERNEL_NAME}-.zip .
+zip -r9 MeowKernel-v${KERNEL_NAME}-Chanz22.zip .
 
