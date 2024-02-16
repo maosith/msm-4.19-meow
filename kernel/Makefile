@@ -40,9 +40,6 @@ endif
 # Don't instrument error handlers
 CFLAGS_cfi.o = $(DISABLE_CFI_CLANG)
 
-# Don't instrument error handlers
-CFLAGS_cfi.o = $(DISABLE_CFI_CLANG)
-
 obj-y += sched/
 obj-y += locking/
 obj-y += power/
@@ -129,7 +126,11 @@ obj-$(CONFIG_RSEQ) += rseq.o
 $(obj)/configs.o: $(obj)/config_data.h
 
 targets += config_data.gz
-$(obj)/config_data.gz: arch/arm64/configs/r8q_defconfig FORCE
+ifdef CONFIG_SAMSUNG_NFC
+$(obj)/config_data.gz: arch/arm64/configs/vendor/r8q_eur_open_defconfig FORCE
+else
+$(obj)/config_data.gz: arch/arm64/configs/vendor/r8q_eur_openx_defconfig FORCE
+endif
 	$(call if_changed,gzip)
 
       filechk_ikconfiggz = (echo "static const char kernel_config_data[] __used = MAGIC_START"; cat $< | scripts/bin2c; echo "MAGIC_END;")
