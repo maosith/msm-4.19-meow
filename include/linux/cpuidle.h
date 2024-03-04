@@ -29,6 +29,9 @@ struct cpuidle_driver;
  * CPUIDLE DEVICE INTERFACE *
  ****************************/
 
+#define CPUIDLE_STATE_DISABLED_BY_USER		BIT(0)
+#define CPUIDLE_STATE_DISABLED_BY_DRIVER	BIT(1)
+
 struct cpuidle_state_usage {
 	unsigned long long	disable;
 	unsigned long long	usage;
@@ -84,6 +87,7 @@ struct cpuidle_device {
 	unsigned int		poll_time_limit:1;
 	unsigned int		cpu;
 
+	int			last_state_idx;
 	int			last_residency;
 	struct cpuidle_state_usage	states_usage[CPUIDLE_STATE_MAX];
 	struct cpuidle_state_kobj *kobjs[CPUIDLE_STATE_MAX];
