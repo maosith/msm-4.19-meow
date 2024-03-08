@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LLVM_PATH="$HOME/clang-r498229b/bin/"
+LLVM_PATH="$HOME/clang-r510928/bin/"
 
 read -p "Digite um nome para o kernel: " KERNEL_NAME
 
@@ -9,8 +9,8 @@ if [ -z "$KERNEL_NAME" ]; then
     exit 1
 fi
 
-TC_PATH="$HOME/clang-r498229b/bin/"
-GCC_PATH="$HOME/gcc/bin/"
+TC_PATH="$HOME/clang-r510928/bin/"
+GCC_PATH="/usr/bin/"
 
 BUILD_ENV="CC=${TC_PATH}clang CROSS_COMPILE=${GCC_PATH}aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 PATH=$LLVM_PATH:$LLD_PATH:$PATH"  
 
