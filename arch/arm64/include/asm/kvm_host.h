@@ -335,8 +335,10 @@ void vcpu_write_sys_reg(struct kvm_vcpu *vcpu, u64 val, int reg);
  * CP14 and CP15 live in the same array, as they are backed by the
  * same system registers.
  */
-#define vcpu_cp14(v,r)		((v)->arch.ctxt.copro[(r)])
-#define vcpu_cp15(v,r)		((v)->arch.ctxt.copro[(r)])
+#define CPx_BIAS		IS_ENABLED(CONFIG_CPU_BIG_ENDIAN)
+
+#define vcpu_cp14(v,r)		((v)->arch.ctxt.copro[(r) ^ CPx_BIAS])
+#define vcpu_cp15(v,r)		((v)->arch.ctxt.copro[(r) ^ CPx_BIAS])
 
 struct kvm_vm_stat {
 	ulong remote_tlb_flush;
@@ -539,5 +541,7 @@ static inline enum mitigation_state kvm_arm_get_spectre_bhb_state(void)
 {
 	return arm64_get_spectre_bhb_state();
 }
+
+#define kvm_arm_vcpu_loaded(vcpu)	((vcpu)->arch.sysregs_loaded_on_cpu)
 
 #endif /* __ARM64_KVM_HOST_H__ */
