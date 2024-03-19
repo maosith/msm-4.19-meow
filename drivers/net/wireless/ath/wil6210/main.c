@@ -1971,7 +1971,7 @@ int __wil_up(struct wil6210_priv *wil)
 		rx_ring_order = wil->hw_version < HW_VER_TALYN_MB ?
 			WIL_RX_RING_SIZE_ORDER_DEFAULT :
 			WIL_RX_RING_SIZE_ORDER_TALYN_DEFAULT;
-
+			
 	rc = wil->txrx_ops.rx_init(wil, rx_ring_order);
 	if (rc)
 		return rc;
@@ -2113,6 +2113,7 @@ void wil_halp_vote(struct wil6210_priv *wil)
 		if (!rc) {
 			wil_err(wil, "HALP vote timed out\n");
 			/* Mask HALP as done in case the interrupt is raised */
+			wil->halp.handle_icr = false;
 			wil6210_mask_halp(wil);
 		} else {
 			wil_dbg_irq(wil,
