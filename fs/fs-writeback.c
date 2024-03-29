@@ -270,6 +270,7 @@ void __inode_attach_wb(struct inode *inode, struct page *page)
 	if (unlikely(cmpxchg(&inode->i_wb, NULL, wb)))
 		wb_put(wb);
 }
+EXPORT_SYMBOL_GPL(__inode_attach_wb);
 
 /**
  * locked_inode_to_wb_and_lock_list - determine a locked inode's wb and lock it
@@ -1157,6 +1158,7 @@ static bool inode_dirtied_after(struct inode *inode, unsigned long t)
 static int move_expired_inodes(struct list_head *delaying_queue,
 			       struct list_head *dispatch_queue,
 			       unsigned long dirtied_before)
+
 {
 	LIST_HEAD(tmp);
 	struct list_head *pos, *node;

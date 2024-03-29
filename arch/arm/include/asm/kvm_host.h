@@ -235,7 +235,7 @@ int __kvm_arm_vcpu_set_events(struct kvm_vcpu *vcpu,
 
 #define KVM_ARCH_WANT_MMU_NOTIFIER
 int kvm_unmap_hva_range(struct kvm *kvm,
-			unsigned long start, unsigned long end);
+			unsigned long start, unsigned long end, bool blockable);
 void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
 
 unsigned long kvm_arm_num_regs(struct kvm_vcpu *vcpu);
@@ -370,5 +370,7 @@ static inline int kvm_arm_get_spectre_bhb_state(void)
 	/* 32bit guests don't need firmware for this */
 	return SPECTRE_VULNERABLE; /* aka SMCCC_RET_NOT_SUPPORTED */
 }
+
+#define kvm_arm_vcpu_loaded(vcpu)	(false)
 
 #endif /* __ARM_KVM_HOST_H__ */
