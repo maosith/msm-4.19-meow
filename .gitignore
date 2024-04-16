@@ -152,3 +152,6 @@ security/samsung/defex_lsm/pack_rules
 
 # Scripts
 *.sh
+
+# AK#
+AnyKernel3/
